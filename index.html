@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MPI - Berpikir Komputasional</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+  <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        nunito: ['Nunito', 'sans-serif']
+                    },
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        accent: '#06b6d4',
+                        surface: '#e0f2fe',
+                        dark: '#0f172a'
+                    }
+                }
+            }
+        }
+    </script>
+  <style>
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(30,27,24,0.4); } 50% { box-shadow: 0 0 40px rgba(30,27,24,0.8); } }
+        @keyframes bounce-in { 0% { transform: scale(0); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes slide-left { from { opacity:0; transform: translateX(-40px); } to { opacity:1; transform: translateX(0); } }
+        @keyframes confetti { 0% { transform: translateY(0) rotate(0deg); opacity:1; } 100% { transform: translateY(400px) rotate(720deg); opacity:0; } }
+        .animate-fade-in-up { animation: fadeInUp 0.6s ease forwards; }
+        .animate-fade-in { animation: fadeIn 0.4s ease forwards; }
+        .animate-bounce-in { animation: bounce-in 0.5s ease forwards; }
+        .animate-slide-left { animation: slide-left 0.4s ease forwards; }
+        .pulse-glow { animation: pulse-glow 2s infinite; }
+        .btn-hover { transition: transform 0.2s, box-shadow 0.2s; }
+        .btn-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(30,27,24,0.3); }
+        .btn-hover:active { transform: translateY(0); }
+        .screen { display: none; width: 100%; height: 100%; overflow-y: auto; }
+        .screen.active { display: flex; flex-direction: column; }
+        .drag-word { cursor: grab; user-select: none; touch-action: none; }
+        .drag-word.dragging { opacity: 0.5; cursor: grabbing; }
+        .drop-zone { min-width: 100px; min-height: 36px; border: 2px dashed #4b5563; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .drop-zone.over { background: #e8ecf1; border-color: #1a1a1a; }
+        .drop-zone.filled { border-style: solid; background: #f0f4f8; }
+        .confetti-piece { position: fixed; width: 10px; height: 10px; top: -10px; animation: confetti 3s ease forwards; z-index: 9999; }
+    </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full font-nunito overflow-hidden" style="background-image: url('https://i.imgur.com/uXDGqgn.png'); background-size: cover; background-position: center; background-attachment: fixed; color: #1a1a1a;">
+  <div id="app" class="h-full w-full relative flex flex-col"><!-- Home Button --> <button id="homeBtn" onclick="playClick();showScreen('menu')" class="hidden fixed top-3 left-3 z-50 bg-slate-700/60 backdrop-blur-md p-2 rounded-full btn-hover" aria-label="Home"> <i data-lucide="home" class="w-5 h-5 text-white"></i> </button> <!-- Settings Button --> <button id="settingsBtn" onclick="playClick();toggleSettings()" class="hidden fixed top-3 right-3 z-50 bg-slate-700/60 backdrop-blur-md p-2 rounded-full btn-hover" aria-label="Settings"> <i data-lucide="settings" class="w-5 h-5 text-white"></i> </button> <!-- Settings Panel -->
+   <div id="settingsPanel" class="hidden fixed top-14 right-3 z-50 bg-white rounded-xl p-4 shadow-2xl text-gray-800 w-64 animate-fade-in">
+    <h3 class="font-bold text-sm mb-3">Pengaturan Audio</h3>
+    <div class="flex items-center justify-between mb-3"><span class="text-sm">Musik Latar</span> <button onclick="toggleMusic()" id="musicToggle" class="w-10 h-6 bg-blue-500 rounded-full relative transition-colors"> <span id="musicDot" class="absolute top-1 left-5 w-4 h-4 bg-white rounded-full transition-all"></span> </button>
+    </div>
+    <div class="flex items-center justify-between mb-2"><span class="text-sm">Efek Suara</span> <button onclick="toggleSfx()" id="sfxToggle" class="w-10 h-6 bg-blue-500 rounded-full relative transition-colors"> <span id="sfxDot" class="absolute top-1 left-5 w-4 h-4 bg-white rounded-full transition-all"></span> </button>
+    </div>
+    <div class="mt-3"><label for="volumeSlider" class="text-sm">Volume</label> <input type="range" id="volumeSlider" min="0" max="100" value="70" class="w-full mt-1 accent-blue-500" oninput="setVolume(this.value)">
+    </div>
+   </div><!-- SPLASH SCREEN -->
+   <div id="splash" class="screen active items-center justify-center p-6 text-center">
+    <div class="animate-fade-in-up">
+     <div class="text-6xl mb-4">
+      🧠
+     </div>
+     <h1 class="text-4xl md:text-5xl font-fredoka font-bold mb-3 leading-tight text-slate-800" id="splashTitle">Berpikir Komputasional</h1>
+     <p class="text-slate-700 text-lg mb-2">Media Pembelajaran Interaktif</p>
+     <p class="text-slate-600 text-sm mb-8">Kelas X • Informatika</p><button onclick="playClick();showScreen('menu')" class="bg-slate-800 text-white font-bold px-10 py-4 rounded-full text-xl btn-hover" style="box-shadow: 0 0 20px rgba(30,27,24,0.4);"> 🚀 MULAI </button>
+     <p class="text-slate-700 text-xs mt-8">Pengembang: <span id="devName">Suci Mega Dian Sari</span> • 2026</p>
+    </div>
+   </div><!-- MENU SCREEN -->
+   <div id="menu" class="screen items-center justify-center p-6">
+    <h2 class="text-3xl font-fredoka font-bold mb-8 animate-fade-in-up text-slate-800">Menu Utama</h2>
+    <div class="grid grid-cols-2 gap-4 w-full max-w-sm"><button onclick="playClick();showScreen('beranda')" class="bg-white/40 backdrop-blur p-6 rounded-2xl flex flex-col items-center gap-2 btn-hover animate-slide-left text-slate-800 font-bold" style="animation-delay:0.1s"> <i data-lucide="home" class="w-8 h-8 text-cyan-800"></i> <span class="font-bold text-sm">BERANDA</span> </button> <button onclick="playClick();showScreen('materi')" class="bg-white/40 backdrop-blur p-6 rounded-2xl flex flex-col items-center gap-2 btn-hover animate-slide-left text-slate-800 font-bold" style="animation-delay:0.2s"> <i data-lucide="book-open" class="w-8 h-8 text-green-800"></i> <span class="font-bold text-sm">MATERI</span> </button> <button onclick="playClick();showScreen('simulasi')" class="bg-white/40 backdrop-blur p-6 rounded-2xl flex flex-col items-center gap-2 btn-hover animate-slide-left text-slate-800 font-bold" style="animation-delay:0.3s"> <i data-lucide="flask-conical" class="w-8 h-8 text-yellow-800"></i> <span class="font-bold text-sm">SIMULASI</span> </button> <button onclick="playClick();showScreen('kuis')" class="bg-white/40 backdrop-blur p-6 rounded-2xl flex flex-col items-center gap-2 btn-hover animate-slide-left text-slate-800 font-bold" style="animation-delay:0.4s"> <i data-lucide="gamepad-2" class="w-8 h-8 text-pink-800"></i> <span class="font-bold text-sm">KUIS</span> </button>
+    </div>
+   </div><!-- BERANDA -->
+   <div id="beranda" class="screen items-center p-6 pt-14">
+    <div class="w-full max-w-lg animate-fade-in-up">
+     <h2 class="text-2xl font-fredoka font-bold mb-4 text-center text-slate-800">📚 Beranda</h2>
+     <div class="bg-white/50 backdrop-blur rounded-2xl p-5 space-y-3 text-sm leading-relaxed text-slate-800">
+      <p><strong>Mata Pelajaran:</strong> Informatika</p>
+      <p><strong>Kelas:</strong> X (Sepuluh)</p>
+      <p><strong>Tema:</strong> Berpikir Komputasional</p>
+      <hr class="border-slate-400">
+      <p class="font-bold">Tujuan Pembelajaran:</p>
+      <ol class="list-decimal pl-5 space-y-1">
+       <li>Menjelaskan pengertian berpikir komputasional dengan benar.</li>
+       <li>Mengidentifikasi masalah dan memecahnya menjadi bagian kecil (decomposition).</li>
+       <li>Mengenali pola dari suatu permasalahan (pattern recognition).</li>
+       <li>Menentukan informasi penting dan mengabaikan yang tidak relevan (abstraction).</li>
+      </ol>
+      <hr class="border-slate-400">
+      <p class="font-bold">Petunjuk Penggunaan:</p>
+      <ul class="list-disc pl-5 space-y-1">
+       <li>Baca materi di menu <strong>MATERI</strong>.</li>
+       <li>Uji pemahaman di menu <strong>SIMULASI</strong> (10 soal).</li>
+       <li>Mainkan game di menu <strong>KUIS</strong> untuk berlatih.</li>
+       <li>Gunakan tombol ⚙️ untuk mengatur audio.</li>
+      </ul>
+     </div>
+    </div>
+   </div><!-- MATERI -->
+   <div id="materi" class="screen items-center p-6 pt-14">
+    <div class="w-full max-w-lg animate-fade-in-up">
+     <h2 class="text-2xl font-fredoka font-bold mb-4 text-center text-slate-800">📖 Materi</h2>
+     <div class="flex gap-1 mb-4 justify-center flex-wrap"><button onclick="playClick();showTab(0)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-white">Pengantar</button> <button onclick="playClick();showTab(1)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/40 text-slate-800">Dekomposisi</button> <button onclick="playClick();showTab(2)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/40 text-slate-800">Pola</button> <button onclick="playClick();showTab(3)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/40 text-slate-800">Abstraksi</button> <button onclick="playClick();showTab(4)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/40 text-slate-800">Algoritma</button>
+     </div>
+     <div id="materiContent" class="bg-white/50 backdrop-blur rounded-2xl p-5 text-sm leading-relaxed min-h-[200px] text-slate-800"></div>
+    </div>
+   </div><!-- SIMULASI -->
+   <div id="simulasi" class="screen items-center p-6 pt-14">
+    <div class="w-full max-w-lg animate-fade-in-up" id="simulasiContainer"></div>
+   </div><!-- KUIS -->
+   <div id="kuis" class="screen items-center p-6 pt-14">
+    <div class="w-full max-w-lg animate-fade-in-up" id="kuisContainer"></div>
+   </div><!-- SERTIFIKAT -->
+   <div id="sertifikat" class="screen items-center justify-center p-6">
+    <div class="bg-white text-gray-800 rounded-3xl p-8 w-full max-w-md text-center shadow-2xl animate-bounce-in">
+     <div class="text-5xl mb-3">
+      🏆
+     </div>
+     <h2 class="text-2xl font-fredoka font-bold text-slate-800 mb-1">SERTIFIKAT</h2>
+     <p class="text-sm text-gray-500 mb-4">Pencapaian Pembelajaran</p>
+     <p class="text-sm">Diberikan kepada:</p>
+     <p class="text-xl font-bold text-slate-800 my-2" id="certName">-</p>
+     <p class="text-sm">Telah menyelesaikan simulasi<br><strong>Berpikir Komputasional</strong></p>
+     <p class="text-lg font-bold text-green-600 my-3" id="certScore">Nilai: 100</p>
+     <p class="text-xs text-gray-400">Pengembang: Suci Mega Dian Sari • 2026</p><button onclick="playClick();showScreen('menu')" class="mt-4 bg-slate-800 text-white px-6 py-2 rounded-full font-bold btn-hover text-sm">Kembali ke Menu</button>
+    </div>
+   </div>
+  </div>
+  <script>
+    // ===== AUDIO SYSTEM =====
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    let musicOn = true, sfxOn = true, volume = 0.7;
+    let bgInterval = null;
+
+    function ensureAudioCtx() { if (!audioCtx) audioCtx = new AudioCtx(); }
+
+    function playClick() {
+        if (!sfxOn) return;
+        ensureAudioCtx();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.setValueAtTime(800, audioCtx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.05);
+        g.gain.setValueAtTime(volume * 0.3, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        o.start(); o.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playCorrect() {
+        if (!sfxOn) return;
+        ensureAudioCtx();
+        [523, 659, 784].forEach((f, i) => {
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.value = f;
+            g.gain.setValueAtTime(volume * 0.2, audioCtx.currentTime + i * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.1 + 0.2);
+            o.start(audioCtx.currentTime + i * 0.1);
+            o.stop(audioCtx.currentTime + i * 0.1 + 0.2);
+        });
+    }
+
+    function playWrong() {
+        if (!sfxOn) return;
+        ensureAudioCtx();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.value = 200; o.type = 'sawtooth';
+        g.gain.setValueAtTime(volume * 0.2, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        o.start(); o.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function startBgMusic() {
+        if (bgInterval) return;
+        ensureAudioCtx();
+        const notes = [262, 294, 330, 349, 392, 349, 330, 294];
+        let idx = 0;
+        bgInterval = setInterval(() => {
+            if (!musicOn) return;
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.type = 'sine';
+            o.frequency.value = notes[idx % notes.length];
+            g.gain.setValueAtTime(volume * 0.05, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+            o.start(); o.stop(audioCtx.currentTime + 0.4);
+            idx++;
+        }, 500);
+    }
+
+    function toggleMusic() {
+        musicOn = !musicOn;
+        const tog = document.getElementById('musicToggle');
+        const dot = document.getElementById('musicDot');
+        tog.className = musicOn ? 'w-10 h-6 bg-blue-500 rounded-full relative transition-colors' : 'w-10 h-6 bg-gray-300 rounded-full relative transition-colors';
+        dot.style.left = musicOn ? '20px' : '4px';
+        if (musicOn) startBgMusic(); else { clearInterval(bgInterval); bgInterval = null; }
+    }
+
+    function toggleSfx() {
+        sfxOn = !sfxOn;
+        const tog = document.getElementById('sfxToggle');
+        const dot = document.getElementById('sfxDot');
+        tog.className = sfxOn ? 'w-10 h-6 bg-blue-500 rounded-full relative transition-colors' : 'w-10 h-6 bg-gray-300 rounded-full relative transition-colors';
+        dot.style.left = sfxOn ? '20px' : '4px';
+    }
+
+    function setVolume(v) { volume = v / 100; }
+    function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
+
+    // ===== NAVIGATION =====
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        const showNav = id !== 'splash';
+        document.getElementById('homeBtn').classList.toggle('hidden', !showNav);
+        document.getElementById('settingsBtn').classList.toggle('hidden', !showNav);
+        document.getElementById('settingsPanel').classList.add('hidden');
+        if (id === 'menu') startBgMusic();
+        if (id === 'materi') showTab(0);
+        if (id === 'simulasi') initSimulasi();
+        if (id === 'kuis') initKuis();
+    }
+
+    // ===== MATERI TABS =====
+    const materiData = [
+        { title: '🧠 Apa itu Berpikir Komputasional?', content: `<p class="mb-3"><strong>Berpikir Komputasional (Computational Thinking)</strong> adalah cara berpikir untuk menyelesaikan masalah secara sistematis, seperti cara komputer memproses informasi.</p><p class="mb-3">Berpikir komputasional <em>bukan</em> berarti berpikir seperti komputer, melainkan berpikir dengan cara yang memungkinkan solusi dapat dijalankan oleh komputer atau manusia secara efisien.</p><p><strong>4 Pilar utama:</strong></p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Dekomposisi</li><li>Pengenalan Pola</li><li>Abstraksi</li><li>Algoritma</li></ul>` },
+        { title: '🔨 Dekomposisi', content: `<p class="mb-3"><strong>Dekomposisi</strong> adalah memecah masalah besar menjadi bagian-bagian kecil yang lebih mudah diselesaikan.</p><p class="mb-3"><strong>Contoh:</strong> Membuat kue 🎂</p><ul class="list-disc pl-5 space-y-1"><li>Siapkan bahan</li><li>Campurkan adonan</li><li>Panggang</li><li>Hias kue</li></ul><p class="mt-3 bg-cyan-500/40 p-3 rounded-lg">💡 <strong>Analogi:</strong> Seperti memotong pizza menjadi irisan-irisan kecil agar mudah dimakan!</p>` },
+        { title: '🔍 Pengenalan Pola', content: `<p class="mb-3"><strong>Pengenalan Pola (Pattern Recognition)</strong> adalah menemukan kesamaan atau tren dalam data atau masalah.</p><p class="mb-3"><strong>Contoh:</strong></p><ul class="list-disc pl-5 space-y-1"><li>Pola cuaca: Mendung → Hujan</li><li>Pola angka: 2, 4, 6, 8, ... → +2</li><li>Pola email spam: selalu ada kata "GRATIS!!!"</li></ul><p class="mt-3 bg-cyan-500/40 p-3 rounded-lg">💡 Dengan mengenali pola, kita bisa membuat prediksi dan solusi yang lebih cepat.</p>` },
+        { title: '🎯 Abstraksi', content: `<p class="mb-3"><strong>Abstraksi</strong> adalah fokus pada informasi penting dan mengabaikan detail yang tidak relevan.</p><p class="mb-3"><strong>Contoh:</strong> Peta transportasi kereta 🚇</p><ul class="list-disc pl-5 space-y-1"><li>✅ Menampilkan: stasiun, rute, urutan berhenti</li><li>❌ Mengabaikan: jarak sebenarnya, bangunan sekitar</li></ul><p class="mt-3 bg-cyan-500/40 p-3 rounded-lg">💡 Abstraksi membantu kita fokus pada apa yang benar-benar penting untuk menyelesaikan masalah.</p>` },
+        { title: '📝 Algoritma', content: `<p class="mb-3"><strong>Algoritma</strong> adalah langkah-langkah terurut dan sistematis untuk menyelesaikan masalah.</p><p class="mb-3"><strong>Contoh:</strong> Algoritma menyeberang jalan 🚶</p><ol class="list-decimal pl-5 space-y-1"><li>Berdiri di tepi jalan</li><li>Lihat ke kiri</li><li>Lihat ke kanan</li><li>Jika aman → seberang</li><li>Jika tidak aman → tunggu</li></ol><p class="mt-3 bg-cyan-500/40 p-3 rounded-lg">💡 Algoritma harus jelas, berurutan, dan memiliki kondisi berhenti.</p>` }
+    ];
+
+    function showTab(idx) {
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach((b, i) => {
+            b.className = i === idx ? 'tab-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-white' : 'tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/40 text-slate-800';
+        });
+        const el = document.getElementById('materiContent');
+        el.innerHTML = `<h3 class="font-bold text-base mb-3">${materiData[idx].title}</h3>${materiData[idx].content}`;
+    }
+
+    // ===== SIMULASI (10 soal) =====
+    let simQuestions = [];
+    let simIdx = 0, simScore = 0, studentName = '';
+
+    const simBank = [
+        { type: 'pg', q: 'Apa itu berpikir komputasional?', opts: ['Cara berpikir sistematis untuk menyelesaikan masalah', 'Pemrograman komputer', 'Menggunakan kalkulator', 'Bermain game'], ans: 0 },
+        { type: 'pg', q: 'Pilar mana yang berarti memecah masalah menjadi bagian kecil?', opts: ['Abstraksi', 'Dekomposisi', 'Algoritma', 'Pola'], ans: 1 },
+        { type: 'pg', q: 'Pola angka 3, 6, 9, 12 ... menggunakan pilar?', opts: ['Dekomposisi', 'Abstraksi', 'Pengenalan Pola', 'Algoritma'], ans: 2 },
+        { type: 'pg', q: 'Pada peta kereta, mengabaikan bangunan sekitar termasuk?', opts: ['Dekomposisi', 'Pengenalan Pola', 'Algoritma', 'Abstraksi'], ans: 3 },
+        { type: 'pg', q: 'Langkah berurutan untuk menyelesaikan masalah disebut?', opts: ['Algoritma', 'Abstraksi', 'Dekomposisi', 'Pola'], ans: 0 },
+        { type: 'drag', q: 'Memecah masalah besar menjadi bagian kecil disebut ___', answer: 'Dekomposisi', options: ['Abstraksi', 'Dekomposisi', 'Algoritma', 'Pola'] },
+        { type: 'drag', q: 'Menemukan kesamaan dalam data disebut pengenalan ___', answer: 'Pola', options: ['Dekomposisi', 'Abstraksi', 'Pola', 'Sistem'] },
+        { type: 'drag', q: 'Fokus pada informasi penting dan mengabaikan yang tidak relevan disebut ___', answer: 'Abstraksi', options: ['Algoritma', 'Abstraksi', 'Dekomposisi', 'Variabel'] },
+        { type: 'mark', q: 'Tandai kata yang merupakan pilar berpikir komputasional:', words: ['Algoritma', 'Memasak', 'Dekomposisi', 'Bermain', 'Abstraksi', 'Menari', 'Pola', 'Tidur'], answers: ['Algoritma', 'Dekomposisi', 'Abstraksi', 'Pola'] },
+        { type: 'mark', q: 'Tandai yang termasuk contoh dekomposisi:', words: ['Membagi tugas', 'Memotong resep jadi langkah', 'Melihat warna', 'Merinci masalah', 'Menghitung cepat', 'Memecah proyek'], answers: ['Membagi tugas', 'Memotong resep jadi langkah', 'Merinci masalah', 'Memecah proyek'] }
+    ];
+
+    function initSimulasi() {
+        simIdx = 0; simScore = 0;
+        simQuestions = [...simBank];
+        const c = document.getElementById('simulasiContainer');
+        c.innerHTML = `
+            <h2 class="text-2xl font-fredoka font-bold mb-4 text-center text-slate-800">🧪 Simulasi</h2>
+            <div class="bg-white/50 backdrop-blur rounded-2xl p-5 text-slate-800">
+                <p class="text-sm mb-3">Masukkan nama kamu untuk memulai simulasi (10 soal):</p>
+                <label for="nameInput" class="sr-only">Nama Siswa</label>
+                <input type="text" id="nameInput" placeholder="Nama lengkap kamu..." class="w-full px-4 py-3 rounded-xl text-gray-800 font-bold text-base outline-none focus:ring-2 focus:ring-slate-700" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+                <button onclick="startSimulasi()" class="mt-4 w-full bg-slate-700 text-white font-bold py-3 rounded-xl btn-hover">Mulai Simulasi →</button>
+            </div>`;
+    }
+
+    function startSimulasi() {
+        const inp = document.getElementById('nameInput');
+        studentName = inp.value.trim();
+        if (!studentName) { inp.focus(); inp.classList.add('ring-2','ring-red-400'); return; }
+        renderSimQuestion();
+    }
+
+    function renderSimQuestion() {
+        const c = document.getElementById('simulasiContainer');
+        if (simIdx >= simQuestions.length) { finishSimulasi(); return; }
+        const q = simQuestions[simIdx];
+        let html = `<div class="flex justify-between items-center mb-3"><span class="text-xs bg-white/40 px-2 py-1 rounded-full text-slate-800">Soal ${simIdx+1}/10</span><span class="text-xs text-slate-800">${studentName}</span></div>`;
+        html += `<div class="bg-white/50 backdrop-blur rounded-2xl p-5 text-slate-800">`;
+        html += `<p class="font-bold text-sm mb-4">${q.q}</p>`;
+
+        if (q.type === 'pg') {
+            q.opts.forEach((o, i) => {
+                html += `<button onclick="answerSim(${i})" class="w-full text-left p-3 rounded-xl mb-2 bg-white/20 btn-hover text-sm text-slate-800">${o}</button>`;
+            });
+        } else if (q.type === 'drag') {
+            html += `<div class="mb-4"><span class="drop-zone" id="dropZone" ondrop="handleDrop(event)" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')">Letakkan di sini</span></div>`;
+            html += `<div class="flex flex-wrap gap-2">`;
+            q.options.sort(() => Math.random()-0.5).forEach(w => {
+                html += `<span class="drag-word bg-slate-700 text-white px-3 py-1 rounded-lg text-sm font-bold cursor-grab" draggable="true" ondragstart="event.dataTransfer.setData('text','${w}')">${w}</span>`;
+            });
+            html += `</div>`;
+            html += `<button onclick="checkDrag()" class="mt-4 w-full bg-green-700 text-white font-bold py-2 rounded-xl btn-hover text-sm">Cek Jawaban</button>`;
+        } else if (q.type === 'mark') {
+            html += `<div class="flex flex-wrap gap-2" id="markWords">`;
+            q.words.sort(() => Math.random()-0.5).forEach(w => {
+                html += `<button onclick="this.classList.toggle('bg-slate-700');this.classList.toggle('text-white');this.classList.toggle('bg-white/20')" class="px-3 py-1 rounded-lg text-sm font-bold bg-white/20 text-slate-800 transition-colors">${w}</button>`;
+            });
+            html += `</div>`;
+            html += `<button onclick="checkMark()" class="mt-4 w-full bg-green-700 text-white font-bold py-2 rounded-xl btn-hover text-sm">Cek Jawaban</button>`;
+        }
+        html += `</div>`;
+        c.innerHTML = html;
+    }
+
+    function answerSim(idx) {
+        const q = simQuestions[simIdx];
+        if (idx === q.ans) { simScore++; playCorrect(); } else { playWrong(); }
+        simIdx++; setTimeout(renderSimQuestion, 400);
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const zone = document.getElementById('dropZone');
+        zone.textContent = e.dataTransfer.getData('text');
+        zone.classList.add('filled');
+        zone.classList.remove('over');
+    }
+
+    function checkDrag() {
+        const zone = document.getElementById('dropZone');
+        const q = simQuestions[simIdx];
+        if (zone.textContent === q.answer) { simScore++; playCorrect(); } else { playWrong(); }
+        simIdx++; setTimeout(renderSimQuestion, 400);
+    }
+
+    function checkMark() {
+        const q = simQuestions[simIdx];
+        const selected = [...document.querySelectorAll('#markWords .bg-slate-700')].map(b => b.textContent);
+        const correct = q.answers.every(a => selected.includes(a)) && selected.length === q.answers.length;
+        if (correct) { simScore++; playCorrect(); } else { playWrong(); }
+        simIdx++; setTimeout(renderSimQuestion, 400);
+    }
+
+    async function finishSimulasi() {
+        const pct = Math.round((simScore / 10) * 100);
+        // Save to data SDK
+        if (window.dataSdk) {
+            await window.dataSdk.create({
+                student_name: studentName,
+                score: simScore,
+                total_questions: 10,
+                percentage: pct,
+                completed_at: new Date().toISOString()
+            });
+        }
+        document.getElementById('certName').textContent = studentName;
+        document.getElementById('certScore').textContent = `Nilai: ${pct}/100 (${simScore}/10 benar)`;
+        showScreen('sertifikat');
+        launchConfetti();
+    }
+
+    function launchConfetti() {
+        const colors = ['#1e40af','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'];
+        for (let i = 0; i < 40; i++) {
+            const el = document.createElement('div');
+            el.className = 'confetti-piece';
+            el.style.left = Math.random() * 100 + '%';
+            el.style.background = colors[Math.floor(Math.random() * colors.length)];
+            el.style.animationDuration = (2 + Math.random() * 2) + 's';
+            el.style.animationDelay = Math.random() * 0.5 + 's';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+    }
+
+    // ===== KUIS (4 games, multi-level) =====
+    let kuisGame = 0, kuisLevel = 0, kuisScore2 = 0;
+
+    const kuisGames = [
+        { name: '🧩 Tebak Pilar', desc: 'Tebak pilar dari deskripsi', levels: [
+            { q: 'Memecah masalah besar menjadi kecil', a: 'Dekomposisi' },
+            { q: 'Menemukan kesamaan dalam data', a: 'Pengenalan Pola' },
+            { q: 'Mengabaikan detail tidak penting', a: 'Abstraksi' },
+            { q: 'Langkah berurutan menyelesaikan masalah', a: 'Algoritma' },
+            { q: 'Membagi tugas proyek ke tim', a: 'Dekomposisi' }
+        ]},
+        { name: '🔢 Temukan Pola', desc: 'Lanjutkan pola angka', levels: [
+            { q: '2, 4, 6, 8, ...', a: '10' },
+            { q: '1, 3, 9, 27, ...', a: '81' },
+            { q: '5, 10, 20, 40, ...', a: '80' },
+            { q: '1, 1, 2, 3, 5, ...', a: '8' },
+            { q: '100, 50, 25, ...', a: '12.5' }
+        ]},
+        { name: '🏷️ Klasifikasi', desc: 'Tentukan termasuk pilar mana', levels: [
+            { q: 'Membuat daftar belanja per kategori', a: 'Dekomposisi' },
+            { q: 'Semua email spam mengandung "GRATIS"', a: 'Pengenalan Pola' },
+            { q: 'Peta hanya menampilkan jalan utama', a: 'Abstraksi' },
+            { q: 'Resep masak langkah 1-5', a: 'Algoritma' },
+            { q: 'Cuaca mendung selalu hujan', a: 'Pengenalan Pola' }
+        ]},
+        { name: '⚡ Kecepatan', desc: 'Jawab secepat mungkin!', levels: [
+            { q: 'CT singkatan dari?', a: 'Computational Thinking' },
+            { q: 'Berapa pilar CT?', a: '4' },
+            { q: 'Pilar ke-1?', a: 'Dekomposisi' },
+            { q: 'Fokus hal penting = ?', a: 'Abstraksi' },
+            { q: 'Langkah terurut = ?', a: 'Algoritma' }
+        ]}
+    ];
+
+    function initKuis() {
+        const c = document.getElementById('kuisContainer');
+        let html = `<h2 class="text-2xl font-fredoka font-bold mb-4 text-center text-slate-800">🎮 Kuis Game</h2>`;
+        html += `<div class="space-y-3">`;
+        kuisGames.forEach((g, i) => {
+            html += `<button onclick="playClick();startKuisGame(${i})" class="w-full bg-white/40 backdrop-blur rounded-xl p-4 text-left btn-hover text-slate-800"><span class="font-bold">${g.name}</span><br><span class="text-xs text-slate-700">${g.desc} • 5 Level</span></button>`;
+        });
+        html += `</div>`;
+        c.innerHTML = html;
+    }
+
+    function startKuisGame(idx) {
+        kuisGame = idx; kuisLevel = 0; kuisScore2 = 0;
+        renderKuisLevel();
+    }
+
+    function renderKuisLevel() {
+        const c = document.getElementById('kuisContainer');
+        const game = kuisGames[kuisGame];
+        if (kuisLevel >= game.levels.length) {
+            c.innerHTML = `<div class="text-center bg-white/50 backdrop-blur rounded-2xl p-6 text-slate-800"><div class="text-4xl mb-3">🎉</div><h3 class="font-bold text-xl mb-2">${game.name} Selesai!</h3><p class="text-sm mb-4">Skor: ${kuisScore2}/${game.levels.length}</p><button onclick="playClick();initKuis()" class="bg-slate-800 text-white font-bold px-6 py-2 rounded-full btn-hover">Kembali</button></div>`;
+            return;
+        }
+        const lvl = game.levels[kuisLevel];
+        let html = `<div class="flex justify-between items-center mb-3"><span class="text-xs bg-white/40 px-2 py-1 rounded-full text-slate-800">${game.name}</span><span class="text-xs text-slate-800">Level ${kuisLevel+1}/5</span></div>`;
+        html += `<div class="bg-white/50 backdrop-blur rounded-2xl p-5 text-slate-800">`;
+        html += `<p class="font-bold mb-4">${lvl.q}</p>`;
+        html += `<label for="kuisInput" class="sr-only">Jawaban</label>`;
+        html += `<input type="text" id="kuisInput" placeholder="Ketik jawaban..." class="w-full px-4 py-3 rounded-xl text-gray-800 font-bold outline-none focus:ring-2 focus:ring-slate-700" autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')checkKuisAnswer()">`;
+        html += `<button onclick="checkKuisAnswer()" class="mt-3 w-full bg-green-700 text-white font-bold py-2 rounded-xl btn-hover text-sm">Jawab</button>`;
+        html += `</div>`;
+        c.innerHTML = html;
+        setTimeout(() => document.getElementById('kuisInput').focus(), 100);
+    }
+
+    function checkKuisAnswer() {
+        const inp = document.getElementById('kuisInput');
+        const ans = inp.value.trim().toLowerCase();
+        const correct = kuisGames[kuisGame].levels[kuisLevel].a.toLowerCase();
+        if (ans === correct) { kuisScore2++; playCorrect(); } else { playWrong(); }
+        kuisLevel++;
+        setTimeout(renderKuisLevel, 400);
+    }
+
+    // ===== DATA SDK =====
+    let records = [];
+    const dataHandler = {
+        onDataChanged(data) { records = data; }
+    };
+
+    // ===== ELEMENT SDK =====
+    const defaultConfig = {
+        app_title: 'Berpikir Komputasional',
+        developer_name: 'Suci Mega Dian Sari',
+        background_color: '#1e40af',
+        surface_color: '#ffffff1a',
+        text_color: '#ffffff',
+        primary_action_color: '#06b6d4',
+        secondary_action_color: '#3b82f6',
+        font_family: 'Nunito',
+        font_size: 16
+    };
+
+    function applyConfig(config) {
+        const title = config.app_title || defaultConfig.app_title;
+        const dev = config.developer_name || defaultConfig.developer_name;
+        const font = config.font_family || defaultConfig.font_family;
+
+        document.getElementById('splashTitle').textContent = title;
+        document.getElementById('devName').textContent = dev + ' • 2026';
+        document.body.style.fontFamily = `${font}, Nunito, sans-serif`;
+    }
+
+    window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (config) => { applyConfig(config); },
+        mapToCapabilities: (config) => ({
+            recolorables: [
+                { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
+                { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
+                { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
+                { get: () => config.primary_action_color || defaultConfig.primary_action_color, set: (v) => { config.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); }},
+                { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: (v) => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); }}
+            ],
+            borderables: [],
+            fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }},
+            fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }}
+        }),
+        mapToEditPanelValues: (config) => new Map([
+            ['app_title', config.app_title || defaultConfig.app_title],
+            ['developer_name', config.developer_name || defaultConfig.developer_name]
+        ])
+    });
+
+    // Init Data SDK
+    (async () => {
+        if (window.dataSdk) {
+            await window.dataSdk.init(dataHandler);
+        }
+    })();
+
+    // Init Lucide
+    lucide.createIcons();
+    </script>
+  <div id="app" class="h-full w-full relative flex flex-col"><!-- Home Button --> <button id="homeBtn" onclick="playClick();showScreen('menu')" class="hidden fixed top-3 left-3 z-50 bg-slate-700/60 backdrop-blur-md p-2 rounded-full btn-hover" aria-label="Home"> <i data-lucide="home" class="w-5 h-5 text-white"></i> </button> <!-- Settings Button --> <button id="settingsBtn" onclick="playClick();toggleSettings()" class="hidden fixed top-3 right-3 z-50 bg-slate-700/60 backdrop-blur-md p-2 rounded-full btn-hover" aria-label="Settings"> <i data-lucide="settings" class="w-5 h-5 text-white"></i> </button> <!-- Settings Panel -->
+   <div id="settingsPanel" class="hidden fixed top-14 right-3 z-50 bg-white rounded-xl p-4 shadow-2xl text-gray-800 w-64 animate-fade-in">
+    <h3 class="font-bold text-sm mb-3">Pengaturan Audio</h3>
+    <div class="flex items-center justify-between mb-3"><span class="text-sm">Musik Latar</span> <button onclick="toggleMusic()" id="musicToggle" class="w-10 h-6 bg-blue-500 rounded-full relative transition-colors"> <span id="musicDot" class="absolute top-1 left-5 w-4 h-4 bg-white rounded-full transition-all"></span> </button>
+    </div>
+    <div class="flex items-center justify-between mb-2"><span class="text-sm">Efek Suara</span> <button onclick="toggleSfx()" id="sfxToggle" class="w-10 h-6 bg-blue-500 rounded-full relative transition-colors"> <span id="sfxDot" class="absolute top-1 left-5 w-4 h-4 bg-white rounded-full transition-all"></span> </button>
+    </div>
+    <div class="mt-3"><label for="volumeSlider" class="text-sm">Volume</label> <input type="range" id="volumeSlider" min="0" max="100" value="70" class="w-full mt-1 accent-blue-500" oninput="setVolume(this.value)">
+    </div>
+   </div><!-- SPLASH SCREEN -->
+   <div id="splash" class="screen active items-center justify-center p-6 text-center">
+    <div class="animate-fade-in-up">
+     <div class="text-6xl mb-4">
+      🧠
+     </div>
+     <h1 class="text-4xl md:text-5xl font-fredoka font-bold mb-3 leading-tight" id="splashTitle">Berpikir Komputasional</h1>
+     <p class="text-blue-200 text-lg mb-2">Media Pembelajaran Interaktif</p>
+     <p class="text-blue-300 text-sm mb-8">Kelas X • Informatika</p><button onclick="playClick();showScreen('menu')" class="bg-white text-primary font-bold px-10 py-4 rounded-full text-xl btn-hover pulse-glow"> 🚀 MULAI </button>
+     <p class="text-blue-300 text-xs mt-8">Pengembang: <span id="devName">Suci Mega Dian Sari</span> • 2026</p>
+    </div>
+   </div><!-- MENU SCREEN -->
+   <div id="menu" class="screen items-center justify-center p-6">
+    <h2 class="text-3xl font-fredoka font-bold mb-8 animate-fade-in-up">Menu Utama</h2>
+    <div class="grid grid-cols-2 gap-4 w-full max-w-sm"><button onclick="playClick();showScreen('beranda')" class="bg-white/10 backdrop-blur p-6 rounded-2xl flex flex-col items-center gap-2 btn-hover animate-slide-left" style="animation-delay:0.1s"> <i data-lucide="home" class="w-8 h-8 text-cyan-300"></i> <span class="font-bold text-sm">BERANDA</span> </button> <button onclick="playClick();showScreen('materi')" class="bg-white/10 backdrop-blur p-6 rounded-2xl flex flex-col items-center gap-2 btn-hover animate-slide-left" style="animation-delay:0.2s"> <i data-lucide="book-open" class="w-8 h-8 text-green-300"></i> <span class="font-bold text-sm">MATERI</span> </button> <button onclick="playClick();showScreen('simulasi')" class="bg-white/10 backdrop-blur p-6 rounded-2xl flex flex-col items-center gap-2 btn-hover animate-slide-left" style="animation-delay:0.3s"> <i data-lucide="flask-conical" class="w-8 h-8 text-yellow-300"></i> <span class="font-bold text-sm">SIMULASI</span> </button> <button onclick="playClick();showScreen('kuis')" class="bg-white/10 backdrop-blur p-6 rounded-2xl flex flex-col items-center gap-2 btn-hover animate-slide-left" style="animation-delay:0.4s"> <i data-lucide="gamepad-2" class="w-8 h-8 text-pink-300"></i> <span class="font-bold text-sm">KUIS</span> </button>
+    </div>
+   </div><!-- BERANDA -->
+   <div id="beranda" class="screen items-center p-6 pt-14">
+    <div class="w-full max-w-lg animate-fade-in-up">
+     <h2 class="text-2xl font-fredoka font-bold mb-4 text-center">📚 Beranda</h2>
+     <div class="bg-white/10 backdrop-blur rounded-2xl p-5 space-y-3 text-sm leading-relaxed">
+      <p><strong>Mata Pelajaran:</strong> Informatika</p>
+      <p><strong>Kelas:</strong> X (Sepuluh)</p>
+      <p><strong>Tema:</strong> Berpikir Komputasional</p>
+      <hr class="border-white/20">
+      <p class="font-bold">Tujuan Pembelajaran:</p>
+      <ol class="list-decimal pl-5 space-y-1">
+       <li>Menjelaskan pengertian berpikir komputasional dengan benar.</li>
+       <li>Mengidentifikasi masalah dan memecahnya menjadi bagian kecil (decomposition).</li>
+       <li>Mengenali pola dari suatu permasalahan (pattern recognition).</li>
+       <li>Menentukan informasi penting dan mengabaikan yang tidak relevan (abstraction).</li>
+      </ol>
+      <hr class="border-white/20">
+      <p class="font-bold">Petunjuk Penggunaan:</p>
+      <ul class="list-disc pl-5 space-y-1">
+       <li>Baca materi di menu <strong>MATERI</strong>.</li>
+       <li>Uji pemahaman di menu <strong>SIMULASI</strong> (10 soal).</li>
+       <li>Mainkan game di menu <strong>KUIS</strong> untuk berlatih.</li>
+       <li>Gunakan tombol ⚙️ untuk mengatur audio.</li>
+      </ul>
+     </div>
+    </div>
+   </div><!-- MATERI -->
+   <div id="materi" class="screen items-center p-6 pt-14">
+    <div class="w-full max-w-lg animate-fade-in-up">
+     <h2 class="text-2xl font-fredoka font-bold mb-4 text-center">📖 Materi</h2>
+     <div class="flex gap-1 mb-4 justify-center flex-wrap"><button onclick="playClick();showTab(0)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white text-primary">Pengantar</button> <button onclick="playClick();showTab(1)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/20">Dekomposisi</button> <button onclick="playClick();showTab(2)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/20">Pola</button> <button onclick="playClick();showTab(3)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/20">Abstraksi</button> <button onclick="playClick();showTab(4)" class="tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/20">Algoritma</button>
+     </div>
+     <div id="materiContent" class="bg-white/10 backdrop-blur rounded-2xl p-5 text-sm leading-relaxed min-h-[200px]"></div>
+    </div>
+   </div><!-- SIMULASI -->
+   <div id="simulasi" class="screen items-center p-6 pt-14">
+    <div class="w-full max-w-lg animate-fade-in-up" id="simulasiContainer"></div>
+   </div><!-- KUIS -->
+   <div id="kuis" class="screen items-center p-6 pt-14">
+    <div class="w-full max-w-lg animate-fade-in-up" id="kuisContainer"></div>
+   </div><!-- SERTIFIKAT -->
+   <div id="sertifikat" class="screen items-center justify-center p-6">
+    <div class="bg-white text-gray-800 rounded-3xl p-8 w-full max-w-md text-center shadow-2xl animate-bounce-in">
+     <div class="text-5xl mb-3">
+      🏆
+     </div>
+     <h2 class="text-2xl font-fredoka font-bold text-primary mb-1">SERTIFIKAT</h2>
+     <p class="text-sm text-gray-500 mb-4">Pencapaian Pembelajaran</p>
+     <p class="text-sm">Diberikan kepada:</p>
+     <p class="text-xl font-bold text-primary my-2" id="certName">-</p>
+     <p class="text-sm">Telah menyelesaikan simulasi<br><strong>Berpikir Komputasional</strong></p>
+     <p class="text-lg font-bold text-green-600 my-3" id="certScore">Nilai: 100</p>
+     <p class="text-xs text-gray-400">Pengembang: Suci Mega Dian Sari • 2026</p><button onclick="playClick();showScreen('menu')" class="mt-4 bg-primary text-white px-6 py-2 rounded-full font-bold btn-hover text-sm">Kembali ke Menu</button>
+    </div>
+   </div>
+  </div>
+  <script>
+    // ===== AUDIO SYSTEM =====
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    let musicOn = true, sfxOn = true, volume = 0.7;
+    let bgInterval = null;
+
+    function ensureAudioCtx() { if (!audioCtx) audioCtx = new AudioCtx(); }
+
+    function playClick() {
+        if (!sfxOn) return;
+        ensureAudioCtx();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.setValueAtTime(800, audioCtx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.05);
+        g.gain.setValueAtTime(volume * 0.3, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        o.start(); o.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playCorrect() {
+        if (!sfxOn) return;
+        ensureAudioCtx();
+        [523, 659, 784].forEach((f, i) => {
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.value = f;
+            g.gain.setValueAtTime(volume * 0.2, audioCtx.currentTime + i * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.1 + 0.2);
+            o.start(audioCtx.currentTime + i * 0.1);
+            o.stop(audioCtx.currentTime + i * 0.1 + 0.2);
+        });
+    }
+
+    function playWrong() {
+        if (!sfxOn) return;
+        ensureAudioCtx();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.value = 200; o.type = 'sawtooth';
+        g.gain.setValueAtTime(volume * 0.2, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        o.start(); o.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function startBgMusic() {
+        if (bgInterval) return;
+        ensureAudioCtx();
+        const notes = [262, 294, 330, 349, 392, 349, 330, 294];
+        let idx = 0;
+        bgInterval = setInterval(() => {
+            if (!musicOn) return;
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.type = 'sine';
+            o.frequency.value = notes[idx % notes.length];
+            g.gain.setValueAtTime(volume * 0.05, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+            o.start(); o.stop(audioCtx.currentTime + 0.4);
+            idx++;
+        }, 500);
+    }
+
+    function toggleMusic() {
+        musicOn = !musicOn;
+        const tog = document.getElementById('musicToggle');
+        const dot = document.getElementById('musicDot');
+        tog.className = musicOn ? 'w-10 h-6 bg-blue-500 rounded-full relative transition-colors' : 'w-10 h-6 bg-gray-300 rounded-full relative transition-colors';
+        dot.style.left = musicOn ? '20px' : '4px';
+        if (musicOn) startBgMusic(); else { clearInterval(bgInterval); bgInterval = null; }
+    }
+
+    function toggleSfx() {
+        sfxOn = !sfxOn;
+        const tog = document.getElementById('sfxToggle');
+        const dot = document.getElementById('sfxDot');
+        tog.className = sfxOn ? 'w-10 h-6 bg-blue-500 rounded-full relative transition-colors' : 'w-10 h-6 bg-gray-300 rounded-full relative transition-colors';
+        dot.style.left = sfxOn ? '20px' : '4px';
+    }
+
+    function setVolume(v) { volume = v / 100; }
+    function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
+
+    // ===== NAVIGATION =====
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        const showNav = id !== 'splash';
+        document.getElementById('homeBtn').classList.toggle('hidden', !showNav);
+        document.getElementById('settingsBtn').classList.toggle('hidden', !showNav);
+        document.getElementById('settingsPanel').classList.add('hidden');
+        if (id === 'menu') startBgMusic();
+        if (id === 'materi') showTab(0);
+        if (id === 'simulasi') initSimulasi();
+        if (id === 'kuis') initKuis();
+    }
+
+    // ===== MATERI TABS =====
+    const materiData = [
+        { title: '🧠 Apa itu Berpikir Komputasional?', content: `<p class="mb-3"><strong>Berpikir Komputasional (Computational Thinking)</strong> adalah cara berpikir untuk menyelesaikan masalah secara sistematis, seperti cara komputer memproses informasi.</p><p class="mb-3">Berpikir komputasional <em>bukan</em> berarti berpikir seperti komputer, melainkan berpikir dengan cara yang memungkinkan solusi dapat dijalankan oleh komputer atau manusia secara efisien.</p><p><strong>4 Pilar utama:</strong></p><ul class="list-disc pl-5 mt-2 space-y-1"><li>Dekomposisi</li><li>Pengenalan Pola</li><li>Abstraksi</li><li>Algoritma</li></ul>` },
+        { title: '🔨 Dekomposisi', content: `<p class="mb-3"><strong>Dekomposisi</strong> adalah memecah masalah besar menjadi bagian-bagian kecil yang lebih mudah diselesaikan.</p><p class="mb-3"><strong>Contoh:</strong> Membuat kue 🎂</p><ul class="list-disc pl-5 space-y-1"><li>Siapkan bahan</li><li>Campurkan adonan</li><li>Panggang</li><li>Hias kue</li></ul><p class="mt-3 bg-cyan-500/20 p-3 rounded-lg">💡 <strong>Analogi:</strong> Seperti memotong pizza menjadi irisan-irisan kecil agar mudah dimakan!</p>` },
+        { title: '🔍 Pengenalan Pola', content: `<p class="mb-3"><strong>Pengenalan Pola (Pattern Recognition)</strong> adalah menemukan kesamaan atau tren dalam data atau masalah.</p><p class="mb-3"><strong>Contoh:</strong></p><ul class="list-disc pl-5 space-y-1"><li>Pola cuaca: Mendung → Hujan</li><li>Pola angka: 2, 4, 6, 8, ... → +2</li><li>Pola email spam: selalu ada kata "GRATIS!!!"</li></ul><p class="mt-3 bg-cyan-500/20 p-3 rounded-lg">💡 Dengan mengenali pola, kita bisa membuat prediksi dan solusi yang lebih cepat.</p>` },
+        { title: '🎯 Abstraksi', content: `<p class="mb-3"><strong>Abstraksi</strong> adalah fokus pada informasi penting dan mengabaikan detail yang tidak relevan.</p><p class="mb-3"><strong>Contoh:</strong> Peta transportasi kereta 🚇</p><ul class="list-disc pl-5 space-y-1"><li>✅ Menampilkan: stasiun, rute, urutan berhenti</li><li>❌ Mengabaikan: jarak sebenarnya, bangunan sekitar</li></ul><p class="mt-3 bg-cyan-500/20 p-3 rounded-lg">💡 Abstraksi membantu kita fokus pada apa yang benar-benar penting untuk menyelesaikan masalah.</p>` },
+        { title: '📝 Algoritma', content: `<p class="mb-3"><strong>Algoritma</strong> adalah langkah-langkah terurut dan sistematis untuk menyelesaikan masalah.</p><p class="mb-3"><strong>Contoh:</strong> Algoritma menyeberang jalan 🚶</p><ol class="list-decimal pl-5 space-y-1"><li>Berdiri di tepi jalan</li><li>Lihat ke kiri</li><li>Lihat ke kanan</li><li>Jika aman → seberang</li><li>Jika tidak aman → tunggu</li></ol><p class="mt-3 bg-cyan-500/20 p-3 rounded-lg">💡 Algoritma harus jelas, berurutan, dan memiliki kondisi berhenti.</p>` }
+    ];
+
+    function showTab(idx) {
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach((b, i) => {
+            b.className = i === idx ? 'tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white text-primary' : 'tab-btn px-3 py-1 rounded-full text-xs font-bold bg-white/20';
+        });
+        const el = document.getElementById('materiContent');
+        el.innerHTML = `<h3 class="font-bold text-base mb-3">${materiData[idx].title}</h3>${materiData[idx].content}`;
+    }
+
+    // ===== SIMULASI (10 soal) =====
+    let simQuestions = [];
+    let simIdx = 0, simScore = 0, studentName = '';
+
+    const simBank = [
+        { type: 'pg', q: 'Apa itu berpikir komputasional?', opts: ['Cara berpikir sistematis untuk menyelesaikan masalah', 'Pemrograman komputer', 'Menggunakan kalkulator', 'Bermain game'], ans: 0 },
+        { type: 'pg', q: 'Pilar mana yang berarti memecah masalah menjadi bagian kecil?', opts: ['Abstraksi', 'Dekomposisi', 'Algoritma', 'Pola'], ans: 1 },
+        { type: 'pg', q: 'Pola angka 3, 6, 9, 12 ... menggunakan pilar?', opts: ['Dekomposisi', 'Abstraksi', 'Pengenalan Pola', 'Algoritma'], ans: 2 },
+        { type: 'pg', q: 'Pada peta kereta, mengabaikan bangunan sekitar termasuk?', opts: ['Dekomposisi', 'Pengenalan Pola', 'Algoritma', 'Abstraksi'], ans: 3 },
+        { type: 'pg', q: 'Langkah berurutan untuk menyelesaikan masalah disebut?', opts: ['Algoritma', 'Abstraksi', 'Dekomposisi', 'Pola'], ans: 0 },
+        { type: 'drag', q: 'Memecah masalah besar menjadi bagian kecil disebut ___', answer: 'Dekomposisi', options: ['Abstraksi', 'Dekomposisi', 'Algoritma', 'Pola'] },
+        { type: 'drag', q: 'Menemukan kesamaan dalam data disebut pengenalan ___', answer: 'Pola', options: ['Dekomposisi', 'Abstraksi', 'Pola', 'Sistem'] },
+        { type: 'drag', q: 'Fokus pada informasi penting dan mengabaikan yang tidak relevan disebut ___', answer: 'Abstraksi', options: ['Algoritma', 'Abstraksi', 'Dekomposisi', 'Variabel'] },
+        { type: 'mark', q: 'Tandai kata yang merupakan pilar berpikir komputasional:', words: ['Algoritma', 'Memasak', 'Dekomposisi', 'Bermain', 'Abstraksi', 'Menari', 'Pola', 'Tidur'], answers: ['Algoritma', 'Dekomposisi', 'Abstraksi', 'Pola'] },
+        { type: 'mark', q: 'Tandai yang termasuk contoh dekomposisi:', words: ['Membagi tugas', 'Memotong resep jadi langkah', 'Melihat warna', 'Merinci masalah', 'Menghitung cepat', 'Memecah proyek'], answers: ['Membagi tugas', 'Memotong resep jadi langkah', 'Merinci masalah', 'Memecah proyek'] }
+    ];
+
+    function initSimulasi() {
+        simIdx = 0; simScore = 0;
+        simQuestions = [...simBank];
+        const c = document.getElementById('simulasiContainer');
+        c.innerHTML = `
+            <h2 class="text-2xl font-fredoka font-bold mb-4 text-center">🧪 Simulasi</h2>
+            <div class="bg-white/10 backdrop-blur rounded-2xl p-5">
+                <p class="text-sm mb-3">Masukkan nama kamu untuk memulai simulasi (10 soal):</p>
+                <label for="nameInput" class="sr-only">Nama Siswa</label>
+                <input type="text" id="nameInput" placeholder="Nama lengkap kamu..." class="w-full px-4 py-3 rounded-xl text-gray-800 font-bold text-base outline-none focus:ring-2 focus:ring-cyan-400" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+                <button onclick="startSimulasi()" class="mt-4 w-full bg-cyan-500 text-white font-bold py-3 rounded-xl btn-hover">Mulai Simulasi →</button>
+            </div>`;
+    }
+
+    function startSimulasi() {
+        const inp = document.getElementById('nameInput');
+        studentName = inp.value.trim();
+        if (!studentName) { inp.focus(); inp.classList.add('ring-2','ring-red-400'); return; }
+        renderSimQuestion();
+    }
+
+    function renderSimQuestion() {
+        const c = document.getElementById('simulasiContainer');
+        if (simIdx >= simQuestions.length) { finishSimulasi(); return; }
+        const q = simQuestions[simIdx];
+        let html = `<div class="flex justify-between items-center mb-3"><span class="text-xs bg-white/20 px-2 py-1 rounded-full">Soal ${simIdx+1}/10</span><span class="text-xs">${studentName}</span></div>`;
+        html += `<div class="bg-white/10 backdrop-blur rounded-2xl p-5">`;
+        html += `<p class="font-bold text-sm mb-4">${q.q}</p>`;
+
+        if (q.type === 'pg') {
+            q.opts.forEach((o, i) => {
+                html += `<button onclick="answerSim(${i})" class="w-full text-left p-3 rounded-xl mb-2 bg-white/10 btn-hover text-sm">${o}</button>`;
+            });
+        } else if (q.type === 'drag') {
+            html += `<div class="mb-4"><span class="drop-zone" id="dropZone" ondrop="handleDrop(event)" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')">Letakkan di sini</span></div>`;
+            html += `<div class="flex flex-wrap gap-2">`;
+            q.options.sort(() => Math.random()-0.5).forEach(w => {
+                html += `<span class="drag-word bg-cyan-500 px-3 py-1 rounded-lg text-sm font-bold cursor-grab" draggable="true" ondragstart="event.dataTransfer.setData('text','${w}')">${w}</span>`;
+            });
+            html += `</div>`;
+            html += `<button onclick="checkDrag()" class="mt-4 w-full bg-green-500 text-white font-bold py-2 rounded-xl btn-hover text-sm">Cek Jawaban</button>`;
+        } else if (q.type === 'mark') {
+            html += `<div class="flex flex-wrap gap-2" id="markWords">`;
+            q.words.sort(() => Math.random()-0.5).forEach(w => {
+                html += `<button onclick="this.classList.toggle('bg-cyan-500');this.classList.toggle('bg-white/10')" class="px-3 py-1 rounded-lg text-sm font-bold bg-white/10 transition-colors">${w}</button>`;
+            });
+            html += `</div>`;
+            html += `<button onclick="checkMark()" class="mt-4 w-full bg-green-500 text-white font-bold py-2 rounded-xl btn-hover text-sm">Cek Jawaban</button>`;
+        }
+        html += `</div>`;
+        c.innerHTML = html;
+    }
+
+    function answerSim(idx) {
+        const q = simQuestions[simIdx];
+        if (idx === q.ans) { simScore++; playCorrect(); } else { playWrong(); }
+        simIdx++; setTimeout(renderSimQuestion, 400);
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const zone = document.getElementById('dropZone');
+        zone.textContent = e.dataTransfer.getData('text');
+        zone.classList.add('filled');
+        zone.classList.remove('over');
+    }
+
+    function checkDrag() {
+        const zone = document.getElementById('dropZone');
+        const q = simQuestions[simIdx];
+        if (zone.textContent === q.answer) { simScore++; playCorrect(); } else { playWrong(); }
+        simIdx++; setTimeout(renderSimQuestion, 400);
+    }
+
+    function checkMark() {
+        const q = simQuestions[simIdx];
+        const selected = [...document.querySelectorAll('#markWords .bg-cyan-500')].map(b => b.textContent);
+        const correct = q.answers.every(a => selected.includes(a)) && selected.length === q.answers.length;
+        if (correct) { simScore++; playCorrect(); } else { playWrong(); }
+        simIdx++; setTimeout(renderSimQuestion, 400);
+    }
+
+    async function finishSimulasi() {
+        const pct = Math.round((simScore / 10) * 100);
+        // Save to data SDK
+        if (window.dataSdk) {
+            await window.dataSdk.create({
+                student_name: studentName,
+                score: simScore,
+                total_questions: 10,
+                percentage: pct,
+                completed_at: new Date().toISOString()
+            });
+        }
+        document.getElementById('certName').textContent = studentName;
+        document.getElementById('certScore').textContent = `Nilai: ${pct}/100 (${simScore}/10 benar)`;
+        showScreen('sertifikat');
+        launchConfetti();
+    }
+
+    function launchConfetti() {
+        const colors = ['#3b82f6','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'];
+        for (let i = 0; i < 40; i++) {
+            const el = document.createElement('div');
+            el.className = 'confetti-piece';
+            el.style.left = Math.random() * 100 + '%';
+            el.style.background = colors[Math.floor(Math.random() * colors.length)];
+            el.style.animationDuration = (2 + Math.random() * 2) + 's';
+            el.style.animationDelay = Math.random() * 0.5 + 's';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+    }
+
+    // ===== KUIS (4 games, multi-level) =====
+    let kuisGame = 0, kuisLevel = 0, kuisScore2 = 0;
+
+    const kuisGames = [
+        { name: '🧩 Tebak Pilar', desc: 'Tebak pilar dari deskripsi', levels: [
+            { q: 'Memecah masalah besar menjadi kecil', a: 'Dekomposisi' },
+            { q: 'Menemukan kesamaan dalam data', a: 'Pengenalan Pola' },
+            { q: 'Mengabaikan detail tidak penting', a: 'Abstraksi' },
+            { q: 'Langkah berurutan menyelesaikan masalah', a: 'Algoritma' },
+            { q: 'Membagi tugas proyek ke tim', a: 'Dekomposisi' }
+        ]},
+        { name: '🔢 Temukan Pola', desc: 'Lanjutkan pola angka', levels: [
+            { q: '2, 4, 6, 8, ...', a: '10' },
+            { q: '1, 3, 9, 27, ...', a: '81' },
+            { q: '5, 10, 20, 40, ...', a: '80' },
+            { q: '1, 1, 2, 3, 5, ...', a: '8' },
+            { q: '100, 50, 25, ...', a: '12.5' }
+        ]},
+        { name: '🏷️ Klasifikasi', desc: 'Tentukan termasuk pilar mana', levels: [
+            { q: 'Membuat daftar belanja per kategori', a: 'Dekomposisi' },
+            { q: 'Semua email spam mengandung "GRATIS"', a: 'Pengenalan Pola' },
+            { q: 'Peta hanya menampilkan jalan utama', a: 'Abstraksi' },
+            { q: 'Resep masak langkah 1-5', a: 'Algoritma' },
+            { q: 'Cuaca mendung selalu hujan', a: 'Pengenalan Pola' }
+        ]},
+        { name: '⚡ Kecepatan', desc: 'Jawab secepat mungkin!', levels: [
+            { q: 'CT singkatan dari?', a: 'Computational Thinking' },
+            { q: 'Berapa pilar CT?', a: '4' },
+            { q: 'Pilar ke-1?', a: 'Dekomposisi' },
+            { q: 'Fokus hal penting = ?', a: 'Abstraksi' },
+            { q: 'Langkah terurut = ?', a: 'Algoritma' }
+        ]}
+    ];
+
+    function initKuis() {
+        const c = document.getElementById('kuisContainer');
+        let html = `<h2 class="text-2xl font-fredoka font-bold mb-4 text-center">🎮 Kuis Game</h2>`;
+        html += `<div class="space-y-3">`;
+        kuisGames.forEach((g, i) => {
+            html += `<button onclick="playClick();startKuisGame(${i})" class="w-full bg-white/10 backdrop-blur rounded-xl p-4 text-left btn-hover"><span class="font-bold">${g.name}</span><br><span class="text-xs text-blue-200">${g.desc} • 5 Level</span></button>`;
+        });
+        html += `</div>`;
+        c.innerHTML = html;
+    }
+
+    function startKuisGame(idx) {
+        kuisGame = idx; kuisLevel = 0; kuisScore2 = 0;
+        renderKuisLevel();
+    }
+
+    function renderKuisLevel() {
+        const c = document.getElementById('kuisContainer');
+        const game = kuisGames[kuisGame];
+        if (kuisLevel >= game.levels.length) {
+            c.innerHTML = `<div class="text-center bg-white/10 backdrop-blur rounded-2xl p-6"><div class="text-4xl mb-3">🎉</div><h3 class="font-bold text-xl mb-2">${game.name} Selesai!</h3><p class="text-sm mb-4">Skor: ${kuisScore2}/${game.levels.length}</p><button onclick="playClick();initKuis()" class="bg-white text-primary font-bold px-6 py-2 rounded-full btn-hover">Kembali</button></div>`;
+            return;
+        }
+        const lvl = game.levels[kuisLevel];
+        let html = `<div class="flex justify-between items-center mb-3"><span class="text-xs bg-white/20 px-2 py-1 rounded-full">${game.name}</span><span class="text-xs">Level ${kuisLevel+1}/5</span></div>`;
+        html += `<div class="bg-white/10 backdrop-blur rounded-2xl p-5">`;
+        html += `<p class="font-bold mb-4">${lvl.q}</p>`;
+        html += `<label for="kuisInput" class="sr-only">Jawaban</label>`;
+        html += `<input type="text" id="kuisInput" placeholder="Ketik jawaban..." class="w-full px-4 py-3 rounded-xl text-gray-800 font-bold outline-none focus:ring-2 focus:ring-cyan-400" autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')checkKuisAnswer()">`;
+        html += `<button onclick="checkKuisAnswer()" class="mt-3 w-full bg-green-500 text-white font-bold py-2 rounded-xl btn-hover text-sm">Jawab</button>`;
+        html += `</div>`;
+        c.innerHTML = html;
+        setTimeout(() => document.getElementById('kuisInput').focus(), 100);
+    }
+
+    function checkKuisAnswer() {
+        const inp = document.getElementById('kuisInput');
+        const ans = inp.value.trim().toLowerCase();
+        const correct = kuisGames[kuisGame].levels[kuisLevel].a.toLowerCase();
+        if (ans === correct) { kuisScore2++; playCorrect(); } else { playWrong(); }
+        kuisLevel++;
+        setTimeout(renderKuisLevel, 400);
+    }
+
+    // ===== DATA SDK =====
+    let records = [];
+    const dataHandler = {
+        onDataChanged(data) { records = data; }
+    };
+
+    // ===== ELEMENT SDK =====
+    const defaultConfig = {
+        app_title: 'Berpikir Komputasional',
+        developer_name: 'Suci Mega Dian Sari',
+        background_color: '#1e3a5f',
+        surface_color: '#ffffff1a',
+        text_color: '#ffffff',
+        primary_action_color: '#06b6d4',
+        secondary_action_color: '#3b82f6',
+        font_family: 'Nunito',
+        font_size: 16
+    };
+
+    function applyConfig(config) {
+        const title = config.app_title || defaultConfig.app_title;
+        const dev = config.developer_name || defaultConfig.developer_name;
+        const font = config.font_family || defaultConfig.font_family;
+        const bg = config.background_color || defaultConfig.background_color;
+        const textC = config.text_color || defaultConfig.text_color;
+        const primary = config.primary_action_color || defaultConfig.primary_action_color;
+        const secondary = config.secondary_action_color || defaultConfig.secondary_action_color;
+        const size = config.font_size || defaultConfig.font_size;
+
+        document.getElementById('splashTitle').textContent = title;
+        document.getElementById('devName').textContent = dev + ' • 2026';
+        document.body.style.fontFamily = `${font}, Nunito, sans-serif`;
+        document.body.style.color = textC;
+        document.body.style.fontSize = size + 'px';
+    }
+
+    window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (config) => { applyConfig(config); },
+        mapToCapabilities: (config) => ({
+            recolorables: [
+                { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
+                { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
+                { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
+                { get: () => config.primary_action_color || defaultConfig.primary_action_color, set: (v) => { config.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); }},
+                { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: (v) => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); }}
+            ],
+            borderables: [],
+            fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }},
+            fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }}
+        }),
+        mapToEditPanelValues: (config) => new Map([
+            ['app_title', config.app_title || defaultConfig.app_title],
+            ['developer_name', config.developer_name || defaultConfig.developer_name]
+        ])
+    });
+
+    // Init Data SDK
+    (async () => {
+        if (window.dataSdk) {
+            await window.dataSdk.init(dataHandler);
+        }
+    })();
+
+    // Init Lucide
+    lucide.createIcons();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9fe02ca5302a0a12',t:'MTc3OTE2MzAxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
